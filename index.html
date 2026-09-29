@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pay Calc: take-home pay with overtime</title>
+<meta name="description" content="Work out your Kenyan take-home pay with overtime, PAYE, NSSF, SHIF and Housing Levy.">
+<meta name="theme-color" content="#F3F0F8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#17121F" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Pay Calc">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧾</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F3F0F8;
+  --paper: #FFFFFF;
+  --ink: #231A36;
+  --muted: #6E6484;
+  --line: #E2DCEC;
+  --field: #FFFFFF;
+  --field-line: #D8D0E6;
+  --accent: #6B4E9E;
+  --accent-soft: #E9E2F5;
+  --kept: #1D7A4E;
+  --kept-soft: #E1F2E8;
+  --seg-paye: #6B4E9E;
+  --seg-nssf: #9C82CF;
+  --seg-shif: #C9B8EA;
+  --seg-housing: #D9A441;
+  --seg-pension: #7F8AA6;
+  --seg-helb: #C46F7E;
+  --track: #E4DEEE;
+  --focus: #6B4E9E;
+  color-scheme: light;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #17121F;
+    --paper: #221B2E;
+    --ink: #EEE8F7;
+    --muted: #A99EBE;
+    --line: #372D47;
+    --field: #221B2E;
+    --field-line: #43375A;
+    --accent: #B39AE6;
+    --accent-soft: #2F2542;
+    --kept: #53C98F;
+    --kept-soft: #1B3328;
+    --seg-paye: #9E7FE0;
+    --seg-nssf: #7B64AE;
+    --seg-shif: #56477A;
+    --seg-housing: #D9A441;
+    --seg-pension: #8C96B3;
+    --seg-helb: #D0808F;
+    --track: #2E2640;
+    --focus: #C6B2F0;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #17121F;
+  --paper: #221B2E;
+  --ink: #EEE8F7;
+  --muted: #A99EBE;
+  --line: #372D47;
+  --field: #221B2E;
+  --field-line: #43375A;
+  --accent: #B39AE6;
+  --accent-soft: #2F2542;
+  --kept: #53C98F;
+  --kept-soft: #1B3328;
+  --seg-paye: #9E7FE0;
+  --seg-nssf: #7B64AE;
+  --seg-shif: #56477A;
+  --seg-housing: #D9A441;
+  --seg-pension: #8C96B3;
+  --seg-helb: #D0808F;
+  --track: #2E2640;
+  --focus: #C6B2F0;
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: inherit; }
+html { scroll-padding-top: env(safe-area-inset-top, 0px); -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Schibsted Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+button, input { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 6px; }
+
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px 48px; }
+
+/* Top bar */
+.top {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 0 8px;
+}
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; letter-spacing: -0.01em; }
+.brand svg { width: 26px; height: 26px; flex: none; }
+.brand small { font-weight: 500; color: var(--muted); font-size: 13px; }
+.ghost {
+  background: none; border: 1px solid var(--field-line); border-radius: 999px;
+  padding: 7px 14px; font-size: 14px; font-weight: 500; color: var(--muted); cursor: pointer;
+}
+.ghost:hover { color: var(--ink); border-color: var(--muted); }
+
+/* Layout */
+.layout { display: grid; gap: 28px; grid-template-columns: minmax(0, 1fr); grid-template-areas: "result" "inputs" "slip"; }
+.result { grid-area: result; }
+.inputs { grid-area: inputs; }
+.slip { grid-area: slip; }
+@media (min-width: 900px) {
+  .layout {
+    grid-template-columns: minmax(0, 380px) minmax(0, 1fr);
+    grid-template-areas: "inputs result" "inputs slip";
+    column-gap: 56px; row-gap: 32px; align-items: start;
+  }
+  .inputs { grid-row: 1 / span 2; padding-top: 14px; }
+}
+
+/* Result */
+.result { padding-top: 12px; }
+.result-label { margin: 0; font-size: 15px; color: var(--muted); font-weight: 500; }
+.net {
+  margin: 2px 0 4px; font-weight: 800; letter-spacing: -0.035em; line-height: 1;
+  font-size: clamp(52px, 15vw, 88px);
+  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+}
+.net .cur { font-size: 0.32em; font-weight: 700; letter-spacing: 0; color: var(--muted); }
+.sub { margin: 10px 0 18px; color: var(--muted); font-size: 15px; }
+.sub strong { color: var(--ink); font-weight: 600; }
+
+.ribbon {
+  display: flex; gap: 3px; height: 18px; border-radius: 999px; overflow: hidden;
+  background: var(--track);
+}
+.ribbon .seg { flex: 0 1 0; min-width: 0; transition: flex-grow 320ms cubic-bezier(.2,.7,.2,1); }
+.ribbon .seg.on { min-width: 4px; }
+.ribbon .seg:not(.on) { display: none; }
+.legend { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 14px; }
+.legend li { display: flex; align-items: center; gap: 6px; color: var(--muted); }
+.legend li b { color: var(--ink); font-weight: 600; }
+.dot { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+
+.ot-note {
+  margin-top: 20px; padding: 14px 16px; border-radius: 14px;
+  background: var(--kept-soft); font-size: 15px;
+}
+.ot-note p { margin: 0; }
+.ot-note p + p { margin-top: 6px; color: var(--muted); }
+.ot-note strong { font-weight: 700; }
+
+/* Inputs */
+.inputs h2, .slip h2 { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; margin: 0 0 12px; }
+.group + .group { margin-top: 28px; }
+.field { display: block; margin-bottom: 14px; }
+.field > span { display: block; font-size: 14px; font-weight: 500; margin-bottom: 6px; }
+.field > span small { font-weight: 400; color: var(--muted); }
+.box {
+  display: flex; align-items: center; background: var(--field);
+  border: 1.5px solid var(--field-line); border-radius: 12px; padding: 0 14px;
+  transition: border-color 120ms;
+}
+.box:focus-within { border-color: var(--accent); }
+.box .pre, .box .post { color: var(--muted); font-size: 15px; font-weight: 500; }
+.box input {
+  flex: 1; min-width: 0; border: 0; background: transparent; outline: none;
+  padding: 13px 8px; font-size: 18px; font-weight: 600; 
+}
+input::placeholder { color: var(--muted); opacity: 0.45; }
+.box.big input { font-size: 22px; padding: 15px 8px; }
+.field .hint { display: block; margin-top: 6px; font-size: 13px; color: var(--muted); }
+
+.hourly { margin: -4px 0 14px; font-size: 14px; color: var(--muted); }
+.hourly b { color: var(--ink); font-weight: 600; }
+
+.ot-row {
+  display: grid; grid-template-columns: 60px minmax(0, 1fr) auto; align-items: center; gap: 10px;
+  padding: 12px 0; border-top: 1px solid var(--line);
+}
+.mult { font-size: 27px; font-weight: 800; letter-spacing: -0.03em; color: var(--accent); line-height: 1; }
+.ot-name { font-weight: 600; font-size: 15px; line-height: 1.25; }
+.ot-name small { display: block; font-weight: 400; color: var(--muted); font-size: 13px; margin-top: 2px; }
+.stepper { display: flex; align-items: center; background: var(--field); border: 1.5px solid var(--field-line); border-radius: 999px; }
+.stepper:focus-within { border-color: var(--accent); }
+.stepper button {
+  width: 42px; height: 44px; border: 0; background: none; cursor: pointer;
+  font-size: 22px; font-weight: 500; color: var(--accent); border-radius: 999px;
+  display: grid; place-items: center; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+}
+.stepper button:active { background: var(--accent-soft); }
+.stepper input {
+  width: 48px; border: 0; background: transparent; text-align: center; outline: none;
+  font-size: 18px; font-weight: 700;  padding: 0;
+}
+
+.ot-row:last-child { border-bottom: 1px solid var(--line); }
+
+/* Payslip */
+.paper {
+  position: relative; background: var(--paper); border-radius: 4px 4px 14px 14px;
+  padding: 26px 20px 18px; margin-top: 8px;
+}
+.paper::before {
+  content: ""; position: absolute; left: 0; right: 0; top: -5px; height: 10px;
+  background: radial-gradient(circle, var(--bg) 4px, transparent 4.6px) repeat-x;
+  background-size: 14px 10px; background-position: 3px 0;
+}
+.paper h3 { margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.rows { margin: 0 0 18px; }
+.r { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 7px 0; font-size: 15px; }
+.r span:first-child small { color: var(--muted); font-size: 13px; margin-left: 4px; }
+.r .v {  white-space: nowrap; }
+.r.tot { border-top: 1px solid var(--line); margin-top: 4px; padding-top: 10px; font-weight: 700; }
+.r.netrow { border-top: 2px solid var(--ink); padding-top: 12px; font-weight: 800; font-size: 18px; }
+.r.netrow .v { color: var(--kept); }
+.r.minus .v::before { content: "−"; margin-right: 1px; }
+
+details.how { margin-top: 14px; border-top: 1px dashed var(--line); }
+details.how > summary { cursor: pointer; padding: 12px 0 6px; font-size: 14px; font-weight: 600; color: var(--accent); list-style: none; }
+details.how > summary::-webkit-details-marker { display: none; }
+details.how .r { font-size: 14px; padding: 5px 0; }
+details.how .r span:first-child { color: var(--muted); }
+details.how .r.tot span:first-child { color: var(--ink); }
+
+.foot { margin-top: 36px; font-size: 13px; color: var(--muted); max-width: 64ch; }
+.foot p { margin: 0 0 8px; }
+
+/* Mini bar */
+.minibar {
+  position: fixed; left: 0; right: 0; top: 0; z-index: 20;
+  padding: calc(10px + env(safe-area-inset-top, 0px)) 20px 10px;
+  background: var(--bg);
+  background: color-mix(in srgb, var(--bg) 95%, transparent);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line);
+  transform: translateY(-110%); transition: transform 220ms ease;
+}
+.minibar.show { transform: translateY(0); }
+.minibar .mb-in { max-width: 1080px; margin: 0 auto; }
+.minibar .mb-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 7px; }
+.minibar .mb-top span { font-size: 13px; color: var(--muted); }
+.minibar .mb-top b { font-size: 20px; font-weight: 800; letter-spacing: -0.02em;  }
+.minibar .ribbon { height: 7px; gap: 2px; }
+@media (min-width: 900px) { .minibar { display: none; } }
+
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0ms !important; animation-duration: 0ms !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="minibar" id="minibar" aria-hidden="true">
+  <div class="mb-in">
+    <div class="mb-top"><span>Take-home pay</span><b id="mbNet">KES 0</b></div>
+    <div class="ribbon" id="mbRibbon"></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="4" y="3" width="24" height="26" rx="3" fill="var(--accent)"/><path d="M9 10h14M9 15h9M9 20h14" stroke="var(--bg)" stroke-width="2.4" stroke-linecap="round"/></svg>
+      <div>Pay Calc<br><small>Take-home pay with overtime</small></div>
+    </div>
+    <button class="ghost" id="reset" type="button">Start over</button>
+  </header>
+
+  <main class="layout">
+    <section class="result" id="result" aria-label="Your take-home pay">
+      <p class="result-label">Take-home pay this month</p>
+      <p class="net"><span class="cur">KES</span><span class="num" id="net">0</span></p>
+      <p class="sub" id="netSub">Enter your basic salary to see your take-home pay.</p>
+      <div class="ribbon" id="ribbon" role="img" aria-label="Pay breakdown"></div>
+      <ul class="legend" id="legend"></ul>
+      <div class="ot-note" id="otNote" hidden></div>
+      <p class="sr" aria-live="polite" id="live"></p>
+    </section>
+
+    <section class="inputs" aria-label="Your details">
+      <div class="group">
+        <h2>Your pay</h2>
+        <label class="field">
+          <span>Basic salary <small>(monthly)</small></span>
+          <div class="box big"><span class="pre">KES</span><input id="basic" inputmode="decimal" autocomplete="off" placeholder="0" enterkeyhint="next"></div>
+        </label>
+        <label class="field">
+          <span>Allowances <small>(taxable, monthly)</small></span>
+          <div class="box"><span class="pre">KES</span><input id="allowances" inputmode="decimal" autocomplete="off" placeholder="0" enterkeyhint="next"></div>
+        </label>
+      </div>
+
+      <div class="group">
+        <h2>Overtime this month</h2>
+        <p class="hourly" id="hourly">Hourly rate is basic salary ÷ 208 hours (26 days × 8 hours).</p>
+        <div class="ot-row">
+          <div class="mult" aria-hidden="true">×2</div>
+          <div class="ot-name">Double time<small id="ot2Pay">KES 0</small></div>
+          <div class="stepper">
+            <button type="button" data-step="ot2" data-dir="-1" aria-label="Remove one double-time hour">−</button>
+            <input id="ot2" inputmode="decimal" autocomplete="off" aria-label="Double-time hours" placeholder="0">
+            <button type="button" data-step="ot2" data-dir="1" aria-label="Add one double-time hour">+</button>
+          </div>
+        </div>
+        <div class="ot-row">
+          <div class="mult" aria-hidden="true">×1.5</div>
+          <div class="ot-name">Time and a half<small id="ot15Pay">KES 0</small></div>
+          <div class="stepper">
+            <button type="button" data-step="ot15" data-dir="-1" aria-label="Remove one time-and-a-half hour">−</button>
+            <input id="ot15" inputmode="decimal" autocomplete="off" aria-label="Time-and-a-half hours" placeholder="0">
+            <button type="button" data-step="ot15" data-dir="1" aria-label="Add one time-and-a-half hour">+</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="group">
+        <h2>Pension, insurance relief and HELB</h2>
+        <label class="field">
+          <span>Pension contribution <small>(% of basic)</small></span>
+          <div class="box"><input id="pensionPct" inputmode="decimal" autocomplete="off" placeholder="0"><span class="post">%</span></div>
+          <span class="hint">Starts at 6%. Set it to 0 if you're not in a pension scheme.</span>
+        </label>
+        <label class="field">
+          <span>Insurance relief <small>(monthly)</small></span>
+          <div class="box"><span class="pre">KES</span><input id="insurance" inputmode="decimal" autocomplete="off" placeholder="0"></div>
+          <span class="hint">Usually 15% of your monthly premiums, up to KES 5,000.</span>
+        </label>
+        <label class="field">
+          <span>HELB loan repayment <small>(monthly)</small></span>
+          <div class="box"><span class="pre">KES</span><input id="helb" inputmode="decimal" autocomplete="off" placeholder="0"></div>
+        </label>
+      </div>
+    </section>
+
+    <section class="slip" aria-label="Payslip breakdown">
+      <h2>Payslip breakdown</h2>
+      <div class="paper">
+        <h3>Earnings</h3>
+        <div class="rows" id="earnRows"></div>
+        <h3>Deductions</h3>
+        <div class="rows" id="dedRows"></div>
+        <div class="r netrow"><span>Net pay</span><span class="v" id="slipNet">0.00</span></div>
+        <details class="how">
+          <summary>How PAYE was worked out</summary>
+          <div id="howRows"></div>
+        </details>
+      </div>
+
+      <div class="foot">
+        <p>Uses current rates: PAYE bands from 10% to 35% with KES 2,400 personal relief; NSSF at 6% of pay up to KES 108,000 (Tier I to KES 9,000); SHIF at 2.75% (minimum KES 300); Housing Levy at 1.5%. NSSF, SHIF, Housing Levy and pension are deducted before tax, with pension plus NSSF capped at KES 30,000.</p>
+        <p>This is an estimate. Your official payslip is final.</p>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------- Rates (match 2025_Pay_Calc_v8_1.xlsx) ----------
+  var R = {
+    workDays: 26, hoursPerDay: 8,
+    nssfRate: 0.06, nssfLower: 9000, nssfUpper: 108000,
+    shifRate: 0.0275, shifMin: 300,
+    housingRate: 0.015,
+    pensionNssfCap: 30000,
+    personalRelief: 2400,
+    bands: [
+      { upTo: 24000, rate: 0.10 },
+      { upTo: 32333, rate: 0.25 },
+      { upTo: 500000, rate: 0.30 },
+      { upTo: 800000, rate: 0.325 },
+      { upTo: Infinity, rate: 0.35 }
+    ]
+  };
+
+  function xround(x) { return x < 0 ? -Math.round(-x) : Math.round(x); }
+
+  function calc(inp) {
+    var basic = inp.basic, allowances = inp.allowances;
+    var hourly = basic / (R.workDays * R.hoursPerDay);
+    var ot2Pay = xround(hourly * inp.ot2 * 2);
+    var ot15Pay = xround(hourly * inp.ot15 * 1.5);
+    var otPay = xround(ot2Pay + ot15Pay);
+    var gross = otPay + basic + allowances;
+
+    var pension = (inp.pensionPct / 100) * basic;
+    var g = Math.max(0, gross);
+    var nssf = R.nssfRate * Math.min(g, R.nssfLower) +
+               R.nssfRate * Math.max(0, Math.min(g, R.nssfUpper) - R.nssfLower);
+    var housing = gross * R.housingRate;
+    var shif = gross * R.shifRate;
+    if (gross > 0 && shif < R.shifMin) shif = R.shifMin;
+
+    var pensionNssf = pension + nssf;
+    var pensionNssfAllowed = Math.min(pensionNssf, R.pensionNssfCap);
+    var allowable = pensionNssfAllowed + housing + shif;
+    var taxable = gross - allowable;
+
+    var prev = 0, bands = [];
+    for (var i = 0; i < R.bands.length; i++) {
+      var b = R.bands[i];
+      var amt = Math.max(0, Math.min(taxable, b.upTo) - prev);
+      bands.push({ from: prev, upTo: b.upTo, rate: b.rate, amount: amt, tax: amt * b.rate });
+      prev = b.upTo;
+    }
+    var taxCharged = bands.reduce(function (s, x) { return s + x.tax; }, 0);
+    var reliefs = R.personalRelief + inp.insurance;
+    var paye = Math.max(0, taxCharged - reliefs);
+    var shifDed = xround(shif);
+    var total = paye + housing + nssf + shifDed + pension + inp.helb;
+    var net = gross - total;
+
+    return {
+      hourly: hourly, ot2Pay: ot2Pay, ot15Pay: ot15Pay, otPay: otPay, gross: gross,
+      pension: pension, nssf: nssf, housing: housing, shif: shif, shifDed: shifDed,
+      pensionNssf: pensionNssf, pensionNssfAllowed: pensionNssfAllowed, allowable: allowable,
+      taxable: taxable, bands: bands, taxCharged: taxCharged, reliefs: reliefs,
+      insurance: inp.insurance, helb: inp.helb, paye: paye, total: total, net: net, netR: xround(net)
+    };
+  }
+
+  // ---------- Formatting ----------
+  var f0 = new Intl.NumberFormat("en-KE", { maximumFractionDigits: 0 });
+  var f2 = new Intl.NumberFormat("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  var fIn = new Intl.NumberFormat("en-KE", { maximumFractionDigits: 2 });
+  function k0(n) { return "KES " + f0.format(Math.round(n)); }
+  function pct(n) { return (n >= 10 || n === 0 ? f0.format(n) : n.toFixed(1)) + "%"; }
+  function hrs(n) { return fIn.format(n) + (n === 1 ? " hr" : " hrs"); }
+
+  // ---------- State ----------
+  var FIELDS = ["basic", "allowances", "ot2", "ot15", "pensionPct", "insurance", "helb"];
+  var MONEY = { basic: 1, allowances: 1, insurance: 1, helb: 1 };
+  var STORE = "paycalc:v2";
+  var DEFAULTS = { pensionPct: 6 };
+  var el = {};
+  FIELDS.forEach(function (id) { el[id] = document.getElementById(id); });
+
+  function parse(v) {
+    var n = parseFloat(String(v).replace(/[^0-9.]/g, ""));
+    return isFinite(n) && n > 0 ? n : 0;
+  }
+  function read() {
+    var o = {};
+    FIELDS.forEach(function (id) { o[id] = parse(el[id].value); });
+    o.ot2 = Math.min(o.ot2, 744); o.ot15 = Math.min(o.ot15, 744);
+    o.pensionPct = Math.min(o.pensionPct, 100);
+    return o;
+  }
+  function display(id, n) {
+    if (!n) return "";
+    return MONEY[id] ? fIn.format(n) : String(Math.round(n * 100) / 100);
+  }
+
+  function save(inp) {
+    try { localStorage.setItem(STORE, JSON.stringify(inp)); } catch (e) {}
+  }
+  function load() {
+    try {
+      var raw = localStorage.getItem(STORE);
+      if (!raw) return null;
+      var o = JSON.parse(raw);
+      return o && typeof o === "object" ? o : null;
+    } catch (e) { return null; }
+  }
+
+  // ---------- Net pay tween ----------
+  var netEl = document.getElementById("net");
+  var shownNet = 0, tweenId = 0;
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function tweenNet(to) {
+    cancelAnimationFrame(tweenId);
+    var from = shownNet;
+    if (reduce || Math.abs(to - from) < 1) { shownNet = to; netEl.textContent = f0.format(to); return; }
+    var t0 = performance.now(), dur = 260;
+    (function step(t) {
+      var p = Math.min(1, (t - t0) / dur);
+      var e = 1 - Math.pow(1 - p, 3);
+      shownNet = from + (to - from) * e;
+      netEl.textContent = f0.format(Math.round(shownNet));
+      if (p < 1) tweenId = requestAnimationFrame(step);
+      else shownNet = to;
+    })(t0);
+  }
+
+  // ---------- Ribbon ----------
+  var SEGS = [
+    { key: "net", label: "Take-home", color: "var(--kept)" },
+    { key: "paye", label: "PAYE", color: "var(--seg-paye)" },
+    { key: "nssf", label: "NSSF", color: "var(--seg-nssf)" },
+    { key: "shifDed", label: "SHIF", color: "var(--seg-shif)" },
+    { key: "housing", label: "Housing Levy", color: "var(--seg-housing)" },
+    { key: "pension", label: "Pension", color: "var(--seg-pension)" },
+    { key: "helb", label: "HELB", color: "var(--seg-helb)" }
+  ];
+  function buildRibbon(node) {
+    node.innerHTML = "";
+    return SEGS.map(function (s) {
+      var d = document.createElement("div");
+      d.className = "seg";
+      d.style.background = s.color;
+      node.appendChild(d);
+      return d;
+    });
+  }
+  var ribbonSegs = buildRibbon(document.getElementById("ribbon"));
+  var mbSegs = buildRibbon(document.getElementById("mbRibbon"));
+  function paintRibbon(segs, r) {
+    SEGS.forEach(function (s, i) {
+      var v = Math.max(0, r[s.key] || 0);
+      segs[i].style.flexGrow = r.gross > 0 ? v : 0;
+      segs[i].classList.toggle("on", v > 0 && r.gross > 0);
+    });
+  }
+
+  // ---------- Mini bar ----------
+  var minibar = document.getElementById("minibar");
+  var heroHidden = false;
+  function updateMinibar() {
+    minibar.classList.toggle("show", heroHidden && parse(el.basic.value) + parse(el.allowances.value) > 0);
+  }
+
+  // ---------- Render ----------
+  function row(label, value, cls, note) {
+    return '<div class="r' + (cls ? " " + cls : "") + '"><span>' + label +
+      (note ? "<small>" + note + "</small>" : "") + '</span><span class="v">' + f2.format(value) + "</span></div>";
+  }
+
+  function render() {
+    var inp = read();
+    var r = calc(inp);
+    save(inp);
+    var has = inp.basic > 0 || inp.allowances > 0;
+
+    // Hero
+    tweenNet(has ? r.netR : 0);
+    document.getElementById("mbNet").textContent = k0(has ? r.netR : 0);
+    var sub = document.getElementById("netSub");
+    if (has) {
+      var kept = r.gross > 0 ? (r.net / r.gross) * 100 : 0;
+      sub.innerHTML = "From <strong>" + k0(r.gross) + "</strong> gross. You keep <strong>" + kept.toFixed(1) + "%</strong>, deductions take " + k0(r.total) + ".";
+    } else {
+      sub.textContent = "Enter your basic salary to see your take-home pay.";
+    }
+
+    var rr = has ? r : { gross: 0 };
+    paintRibbon(ribbonSegs, rr);
+    paintRibbon(mbSegs, rr);
+
+    var legend = document.getElementById("legend");
+    legend.innerHTML = has ? SEGS.filter(function (s) { return r[s.key] > 0; }).map(function (s) {
+      return '<li><span class="dot" style="background:' + s.color + '"></span>' + s.label + " <b>" + pct((r[s.key] / r.gross) * 100) + "</b></li>";
+    }).join("") : "";
+    document.getElementById("ribbon").setAttribute("aria-label", has
+      ? SEGS.filter(function (s) { return r[s.key] > 0; }).map(function (s) { return s.label + " " + pct((r[s.key] / r.gross) * 100); }).join(", ")
+      : "No pay entered yet");
+
+    // Overtime insight
+    var note = document.getElementById("otNote");
+    if (has && r.otPay > 0) {
+      var base = calc(Object.assign({}, inp, { ot2: 0, ot15: 0 }));
+      var otKept = r.net - base.net;
+      var keptPct = (otKept / r.otPay) * 100;
+      var next = calc(Object.assign({}, inp, { ot15: inp.ot15 + 1 }));
+      var totalHrs = inp.ot2 + inp.ot15;
+      note.innerHTML = "<p>Your " + hrs(totalHrs) + " of overtime add <strong>" + k0(r.otPay) +
+        "</strong> to gross pay. After tax and deductions you keep <strong>" + k0(otKept) + "</strong> of it (" + Math.round(keptPct) + "%).</p>" +
+        "<p>One more hour at time and a half adds about " + k0(next.net - r.net) + " to your take-home.</p>";
+      note.hidden = false;
+    } else if (has) {
+      var nx = calc(Object.assign({}, inp, { ot15: 1 }));
+      note.innerHTML = "<p>No overtime entered.</p><p>Each hour at time and a half would add about " + k0(nx.net - r.net) + " to your take-home.</p>";
+      note.hidden = false;
+    } else {
+      note.hidden = true;
+    }
+
+    // Overtime rows
+    document.getElementById("hourly").innerHTML = inp.basic > 0
+      ? "Your hourly rate is <b>KES " + f2.format(r.hourly) + "</b> (basic ÷ 208 hours)."
+      : "Hourly rate is basic salary ÷ 208 hours (26 days × 8 hours).";
+    document.getElementById("ot2Pay").textContent = inp.ot2 > 0 ? "Pays " + k0(r.ot2Pay) : "Hours this month";
+    document.getElementById("ot15Pay").textContent = inp.ot15 > 0 ? "Pays " + k0(r.ot15Pay) : "Hours this month";
+
+    // Payslip
+    var e = row("Basic salary", inp.basic);
+    if (inp.allowances) e += row("Allowances", inp.allowances);
+    if (r.ot2Pay) e += row("Overtime ×2", r.ot2Pay, "", hrs(inp.ot2));
+    if (r.ot15Pay) e += row("Overtime ×1.5", r.ot15Pay, "", hrs(inp.ot15));
+    e += row("Gross pay", r.gross, "tot");
+    document.getElementById("earnRows").innerHTML = e;
+
+    var d = row("PAYE", has ? r.paye : 0);
+    d += row("NSSF", has ? r.nssf : 0);
+    d += row("SHIF", has ? r.shifDed : 0);
+    d += row("Housing Levy", has ? r.housing : 0);
+    if (r.pension) d += row("Pension", r.pension);
+    if (inp.helb) d += row("HELB", inp.helb);
+    d += row("Total deductions", has ? r.total : 0, "tot");
+    document.getElementById("dedRows").innerHTML = d;
+    document.getElementById("slipNet").textContent = f2.format(has ? r.net : 0);
+
+    // PAYE workings
+    var h = row("Gross pay", r.gross);
+    var capNote = r.pensionNssf > R.pensionNssfCap ? "capped at 30,000" : "";
+    h += row(r.pension ? "NSSF + pension" : "NSSF", r.pensionNssfAllowed, "minus", capNote);
+    h += row("SHIF", has ? r.shif : 0, "minus");
+    h += row("Housing Levy", r.housing, "minus");
+    h += row("Taxable pay", has ? r.taxable : 0, "tot");
+    r.bands.forEach(function (b, i) {
+      if (b.amount <= 0) return;
+      var label = (b.rate * 100).toString().replace(/\.0$/, "") + "% on " +
+        (i === 0 ? "first " : "next ") + f2.format(b.amount);
+      h += row(label, b.tax);
+    });
+    h += row("Tax before reliefs", has ? r.taxCharged : 0, "tot");
+    h += row("Personal relief", R.personalRelief, "minus");
+    if (inp.insurance) h += row("Insurance relief", inp.insurance, "minus");
+    h += row("PAYE", has ? r.paye : 0, "tot");
+    document.getElementById("howRows").innerHTML = h;
+
+    document.getElementById("live").textContent = has ? "Take-home pay " + k0(r.netR) : "";
+    updateMinibar();
+  }
+
+  function applyDefaults() {
+    FIELDS.forEach(function (id) { el[id].value = display(id, DEFAULTS[id] || 0); });
+  }
+
+  // ---------- Events ----------
+  FIELDS.forEach(function (id) {
+    var inp = el[id];
+    inp.addEventListener("input", render);
+    inp.addEventListener("focus", function () {
+      var n = parse(inp.value);
+      inp.value = n ? String(n) : "";
+    });
+    inp.addEventListener("blur", function () { inp.value = display(id, parse(inp.value)); });
+    inp.addEventListener("keydown", function (ev) { if (ev.key === "Enter") inp.blur(); });
+  });
+
+  document.querySelectorAll("[data-step]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var id = btn.getAttribute("data-step");
+      var n = parse(el[id].value) + Number(btn.getAttribute("data-dir"));
+      n = Math.max(0, Math.min(744, Math.round(n * 100) / 100));
+      el[id].value = display(id, n);
+      render();
+    });
+  });
+
+  document.getElementById("reset").addEventListener("click", function () {
+    applyDefaults();
+    try { localStorage.removeItem(STORE); } catch (e) {}
+    render();
+    el.basic.focus();
+  });
+
+  // Mini bar when the result scrolls away
+  if ("IntersectionObserver" in window) {
+    new IntersectionObserver(function (entries) {
+      heroHidden = !entries[0].isIntersecting && entries[0].boundingClientRect.top < 0;
+      updateMinibar();
+    }, { threshold: 0 }).observe(document.getElementById("ribbon"));
+  }
+
+  // ---------- Init ----------
+  var saved = load();
+  if (saved) {
+    FIELDS.forEach(function (id) { el[id].value = display(id, parse(saved[id])); });
+  } else {
+    applyDefaults();
+  }
+  render();
+})();
+</script>
+</body>
+</html>
