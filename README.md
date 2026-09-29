@@ -1,6 +1,6 @@
 Pay Calc
 
-A quick, mobile-friendly calculator for Kenyan take-home pay with overtime. Enter basic salary, allowances and overtime hours; it works out PAYE, NSSF, SHIF, Housing Levy, pension and HELB, and shows how much of your overtime you actually keep.
+A quick, mobile-friendly calculator for Kenyan take-home pay. Enter basic salary, allowances and overtime hours; it works out PAYE, NSSF, SHIF, Housing Levy, pension and HELB.
 
 It is a single index.html file with no build step and no server. Nothing you type leaves your phone; your last entries are saved in your own browser.
 
